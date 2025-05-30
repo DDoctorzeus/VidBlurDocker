@@ -1,0 +1,113 @@
+# 📷 BlurCam – Virtual Webcam with Background Blur (Docker + CUDA)
+
+This project sets up a **Docker container** that reads from your real webcam (`/dev/video0`), applies **real-time background blurring** using **MediaPipe** and **OpenCV**, and writes the processed video to a **virtual webcam device** (`/dev/video10`) using `v4l2loopback`.
+
+Ideal for use in video conferencing applications like Zoom, OBS, or browsers — giving you privacy without needing built-in virtual background support.
+
+---
+
+## 🔧 Requirements
+
+- Linux host (tested on **Arch Linux**)
+- NVIDIA GPU with drivers installed (`nvidia-smi` should work)
+- Docker with [NVIDIA container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html)
+- `v4l2loopback` kernel module installed and loaded on the host
+
+---
+
+## 📦 Installation
+
+### 1. Install Dependencies (Host)
+
+```bash
+# Arch Linux
+sudo pacman -S v4l2loopback-dkms v4l-utils docker vidia-container-toolkit
+sudo systemctl restart docker
+```
+
+### 2. Load v4l2loopback (Host)
+
+```bash
+sudo modprobe v4l2loopback devices=1 video_nr=10 card_label="BlurCam" exclusive_caps=1
+```
+
+This creates a virtual webcam at `/dev/video10`.
+
+---
+
+## 🛠️ Build the Docker Image
+
+```bash
+docker build -t blurcam .
+```
+
+---
+
+## 🚀 Run the Container
+
+```bash
+docker run --rm \
+  --gpus all \
+  --device=/dev/video0 \
+  --device=/dev/video10 \
+  --network=host \
+  blurcam
+```
+
+- `--gpus all`: enables GPU access for CUDA acceleration.
+- `--device=/dev/video*`: gives the container access to video devices.
+
+---
+
+## 📄 How It Works
+
+- Captures video from `/dev/video0` (real webcam).
+- Uses **MediaPipe** for real-time person segmentation.
+- Blurs the background using **OpenCV** (supports CUDA).
+- Outputs the processed frames to `/dev/video10`.
+
+---
+
+## 🧪 Testing
+
+You can test the virtual webcam using:
+
+```bash
+ffplay /dev/video10
+```
+
+Or by opening any webcam-compatible app like Zoom or OBS and selecting **"BlurCam"** as your video source.
+
+---
+
+## 📁 Project Structure
+
+```
+.
+├── Dockerfile       # Builds the container
+├── blurcam.py       # Python script with OpenCV + MediaPipe
+└── README.md        # Documentation
+```
+
+---
+
+## 💡 Optional Improvements
+
+- [ ] Use `cv2.cuda` to accelerate Gaussian blur on GPU
+- [ ] Add support for background image replacement
+- [ ] Enable webcam resolution selection
+- [ ] Package as a systemd service or autostart script
+- [ ] Provide a `docker-compose.yml` for easier launch
+
+---
+
+## 🪪 License
+
+This project is dedicated to the public domain under the **Creative Commons Zero v1.0 Universal License**.
+
+> You can copy, modify, distribute, and use the code for any purpose, even commercially, without asking permission.
+
+For full legal text, see:  
+[https://creativecommons.org/publicdomain/zero/1.0/](https://creativecommons.org/publicdomain/zero/1.0/)
+
+---
